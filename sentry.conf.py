@@ -304,3 +304,61 @@ if 'GITHUB_APP_ID' in os.environ:
 if 'BITBUCKET_CONSUMER_KEY' in os.environ:
     BITBUCKET_CONSUMER_KEY = env('BITBUCKET_CONSUMER_KEY')
     BITBUCKET_CONSUMER_SECRET = env('BITBUCKET_CONSUMER_SECRET')
+
+####################
+# sentry-ldap-auth #
+####################
+import ldap
+from django_auth_ldap.config import LDAPSearch, GroupOfUniqueNamesType
+
+AUTH_LDAP_SERVER_URI = env('AUTH_LDAP_SERVER_URI')
+AUTH_LDAP_BIND_DN = env('AUTH_LDAP_BIND_DN')
+AUTH_LDAP_BIND_PASSWORD = env('AUTH_LDAP_BIND_PASSWORD')
+
+AUTH_LDAP_USER_SEARCH = LDAPSearch(
+    env('AUTH_LDAP_USER_SEARCH_DN') or '',
+    ldap.SCOPE_SUBTREE,
+    env('AUTH_LDAP_USER_SEARCH_FILTER') or '(mail=%(user)s)',
+)
+
+AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
+    env('AUTH_LDAP_GROUP_SEARCH_DN') or '',
+    ldap.SCOPE_SUBTREE,
+    env('AUTH_LDAP_GROUP_SEARCH_FILTER') or '(objectClass=groupOfUniqueNames)'
+)
+
+AUTH_LDAP_GROUP_TYPE = GroupOfUniqueNamesType()
+AUTH_LDAP_REQUIRE_GROUP = None
+AUTH_LDAP_DENY_GROUP = None
+
+AUTH_LDAP_USER_ATTR_MAP = {
+    'name': 'cn',
+    'email': 'mail'
+}
+
+AUTH_LDAP_FIND_GROUP_PERMS = False
+AUTH_LDAP_CACHE_GROUPS = True
+AUTH_LDAP_GROUP_CACHE_TIMEOUT = 3600
+
+AUTH_LDAP_DEFAULT_SENTRY_ORGANIZATION = unicode(env('AUTH_LDAP_DEFAULT_SENTRY_ORGANIZATION') or 'Sentry')
+
+AUTH_LDAP_SENTRY_ORGANIZATION_ROLE_TYPE = env('AUTH_LDAP_SENTRY_ORGANIZATION_ROLE_TYPE') or 'member'
+AUTH_LDAP_SENTRY_ORGANIZATION_GLOBAL_ACCESS = True
+AUTH_LDAP_SENTRY_USERNAME_FIELD = 'uid'
+
+AUTHENTICATION_BACKENDS = AUTHENTICATION_BACKENDS + (
+    'sentry_ldap_auth.backend.SentryLdapBackend',
+)
+
+# optional, for debugging
+# should run with option --loglevel DEBUG
+import logging
+logger = logging.getLogger('django_auth_ldap')
+logger.addHandler(logging.StreamHandler())
+logger.setLevel('DEBUG')
+
+LOGGING['overridable'] = ['sentry', 'django_auth_ldap']
+LOGGING['loggers']['django_auth_ldap'] = {
+    'handlers': ['console'],
+    'level': 'DEBUG'
+}
